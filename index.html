@@ -493,12 +493,16 @@ let lastDistance = null;
 container.style.touchAction = "none"; // VERY IMPORTANT
 
 container.addEventListener("pointerdown", (e) => {
-    container.setPointerCapture(e.pointerId);
+    // If clicking a person, DO NOT start dragging
+    if (e.target.closest(".person")) return;
+
     pointers.push(e);
 });
 
+
 container.addEventListener("pointermove", (e) => {
-    // Update pointer
+    if (e.target.closest(".person")) return;
+
     const index = pointers.findIndex(p => p.pointerId === e.pointerId);
     if (index >= 0) pointers[index] = e;
 
@@ -525,6 +529,7 @@ container.addEventListener("pointermove", (e) => {
         lastDistance = distance;
     }
 });
+
 
 container.addEventListener("pointerup", removePointer);
 container.addEventListener("pointercancel", removePointer);
