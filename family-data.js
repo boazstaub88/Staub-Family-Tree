@@ -390,9 +390,9 @@ const familyData = [
   {
     "id": "person1770431839305",
     "name": "Boaz",
-    "email": "",
-    "phone": "",
-    "birthday": "",
+    "email": "boazstaub88@gmail.com",
+    "phone": "6179132998",
+    "birthday": "2007-10-31",
     "photo": "",
     "x": 3308,
     "y": 654,
