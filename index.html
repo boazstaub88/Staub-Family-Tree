@@ -18,13 +18,17 @@
             height: 100vh;
         }
 
+       
+
         #tree-container {
-            width: 100%;
-            height: 100vh;
-            position: relative;
-            cursor: grab;
-            overflow: hidden;
-        }
+    width: 100%;
+    height: 100vh;
+    position: relative;
+    cursor: grab;
+    overflow: hidden;
+    touch-action: none;
+}
+
 
         #tree-container.grabbing {
             cursor: grabbing;
@@ -173,15 +177,7 @@
             color: #999;
         }
 
-        #zoom-controls {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            z-index: 100;
-        }
+        
 
         .zoom-btn {
             width: 50px;
@@ -197,10 +193,7 @@
         <button id="reset-view-btn">Reset View</button>
     </div>
 
-    <div id="zoom-controls">
-        <button class="zoom-btn" id="zoom-in">+</button>
-        <button class="zoom-btn" id="zoom-out">−</button>
-    </div>
+    
 
     <div id="tree-container">
         <div id="tree-canvas"></div>
@@ -241,8 +234,7 @@
         let scale = 1;
         let translateX = 0;
         let translateY = 0;
-        let isDragging = false;
-        let startX, startY;
+        
         let svgElement = null;
 
         function drawTree() {
@@ -495,54 +487,68 @@
             canvas.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
         }
 
-        // Pan functionality
-        container.addEventListener('mousedown', (e) => {
-            if (e.target === container || e.target === canvas) {
-                isDragging = true;
-                startX = e.clientX - translateX;
-                startY = e.clientY - translateY;
-                container.classList.add('grabbing');
-            }
-        });
+        let pointers = [];
+let lastDistance = null;
 
-        container.addEventListener('mousemove', (e) => {
-            if (isDragging) {
-                translateX = e.clientX - startX;
-                translateY = e.clientY - startY;
-                updateTransform();
-            }
-        });
+container.style.touchAction = "none"; // VERY IMPORTANT
 
-        container.addEventListener('mouseup', () => {
-            isDragging = false;
-            container.classList.remove('grabbing');
-        });
+container.addEventListener("pointerdown", (e) => {
+    container.setPointerCapture(e.pointerId);
+    pointers.push(e);
+});
 
-        container.addEventListener('mouseleave', () => {
-            isDragging = false;
-            container.classList.remove('grabbing');
-        });
+container.addEventListener("pointermove", (e) => {
+    // Update pointer
+    const index = pointers.findIndex(p => p.pointerId === e.pointerId);
+    if (index >= 0) pointers[index] = e;
 
-        // Zoom functionality
-        container.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? 0.9 : 1.1;
-            scale *= delta;
+    // ONE finger = drag
+    if (pointers.length === 1) {
+        translateX += e.movementX;
+        translateY += e.movementY;
+        updateTransform();
+    }
+
+    // TWO fingers = pinch zoom
+    if (pointers.length === 2) {
+        const dx = pointers[0].clientX - pointers[1].clientX;
+        const dy = pointers[0].clientY - pointers[1].clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (lastDistance) {
+            const zoomFactor = distance / lastDistance;
+            scale *= zoomFactor;
             scale = Math.max(0.3, Math.min(3, scale));
             updateTransform();
-        });
+        }
 
-        document.getElementById('zoom-in').addEventListener('click', () => {
-            scale *= 1.2;
-            scale = Math.min(3, scale);
-            updateTransform();
-        });
+        lastDistance = distance;
+    }
+});
 
-        document.getElementById('zoom-out').addEventListener('click', () => {
-            scale *= 0.8;
-            scale = Math.max(0.3, scale);
-            updateTransform();
-        });
+container.addEventListener("pointerup", removePointer);
+container.addEventListener("pointercancel", removePointer);
+
+function removePointer(e) {
+    pointers = pointers.filter(p => p.pointerId !== e.pointerId);
+    if (pointers.length < 2) {
+        lastDistance = null;
+    }
+}
+
+container.addEventListener('wheel', (e) => {
+    e.preventDefault();
+
+    const zoomSpeed = 0.1;
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+
+    scale *= delta;
+    scale = Math.max(0.3, Math.min(3, scale));
+
+    updateTransform();
+}, { passive: false });
+
+
 
         document.getElementById('reset-view-btn').addEventListener('click', () => {
             scale = 1;
