@@ -394,7 +394,8 @@
             
             const name = document.createElement('div');
             name.className = 'person-name';
-            name.textContent = person.name;
+            name.textContent = person.name.split(' ')[0]; // Only first name
+
             
             personDiv.appendChild(circle);
             personDiv.appendChild(name);
@@ -405,78 +406,75 @@
         }
 
         function drawCouple(person1, person2) {
-            // Determine who was born into the family (has parents) and who married in (no parents)
-            let bornIntoFamily = person1;
-            let marriedIn = person2;
-            
-            // If person2 has parents and person1 doesn't, swap them
-            if ((!person1.parents || person1.parents.length === 0) && person2.parents && person2.parents.length > 0) {
-                bornIntoFamily = person2;
-                marriedIn = person1;
-            }
-            
-            // Calculate positions so names don't overlap
-            // We'll position them so the circles overlap but names are side-by-side
-            const leftPerson = marriedIn.x < bornIntoFamily.x ? marriedIn : bornIntoFamily;
-            const rightPerson = marriedIn.x < bornIntoFamily.x ? bornIntoFamily : marriedIn;
-            
-            // Draw the left person
-            const leftDiv = document.createElement('div');
-            leftDiv.className = 'person';
-            leftDiv.style.left = leftPerson.x + 'px';
-            leftDiv.style.top = leftPerson.y + 'px';
-            
-            const leftCircle = document.createElement('div');
-            leftCircle.className = 'person-circle';
-            
-            if (leftPerson.photo) {
-                leftCircle.style.backgroundImage = `url(${leftPerson.photo})`;
-            } else {
-                leftCircle.textContent = leftPerson.name.charAt(0).toUpperCase();
-            }
-            
-            const leftName = document.createElement('div');
-            leftName.className = 'person-name';
-            leftName.textContent = leftPerson.name;
-            leftName.style.marginLeft = '-20px'; // Shift name left
-            
-            leftDiv.appendChild(leftCircle);
-            leftDiv.appendChild(leftName);
-            leftDiv.addEventListener('click', () => showPersonDetails(leftPerson));
-            
-            // Draw the right person
-            const rightDiv = document.createElement('div');
-            rightDiv.className = 'person';
-            rightDiv.style.left = rightPerson.x + 'px';
-            rightDiv.style.top = rightPerson.y + 'px';
-            
-            const rightCircle = document.createElement('div');
-            rightCircle.className = 'person-circle';
-            
-            if (rightPerson.photo) {
-                rightCircle.style.backgroundImage = `url(${rightPerson.photo})`;
-            } else {
-                rightCircle.textContent = rightPerson.name.charAt(0).toUpperCase();
-            }
-            
-            const rightName = document.createElement('div');
-            rightName.className = 'person-name';
-            rightName.textContent = rightPerson.name;
-            rightName.style.marginLeft = '20px'; // Shift name right
-            
-            rightDiv.appendChild(rightCircle);
-            rightDiv.appendChild(rightName);
-            rightDiv.addEventListener('click', () => showPersonDetails(rightPerson));
-            
-            // Append married-in spouse first (bottom layer), then family member (top layer)
-            if (marriedIn === leftPerson) {
-                canvas.appendChild(leftDiv);
-                canvas.appendChild(rightDiv);
-            } else {
-                canvas.appendChild(rightDiv);
-                canvas.appendChild(leftDiv);
-            }
-        }
+    // Determine who was born into the family (has parents) and who married in (no parents)
+    let bornIntoFamily = person1;
+    let marriedIn = person2;
+
+    if ((!person1.parents || person1.parents.length === 0) && person2.parents && person2.parents.length > 0) {
+        bornIntoFamily = person2;
+        marriedIn = person1;
+    }
+
+    // Positions
+    const leftPerson = marriedIn.x < bornIntoFamily.x ? marriedIn : bornIntoFamily;
+    const rightPerson = marriedIn.x < bornIntoFamily.x ? bornIntoFamily : marriedIn;
+
+    // Draw left person
+    const leftDiv = document.createElement('div');
+    leftDiv.className = 'person';
+    leftDiv.style.left = leftPerson.x + 'px';
+    leftDiv.style.top = leftPerson.y + 'px';
+
+    const leftCircle = document.createElement('div');
+    leftCircle.className = 'person-circle';
+    if (leftPerson.photo) {
+        leftCircle.style.backgroundImage = `url(${leftPerson.photo})`;
+    } else {
+        leftCircle.textContent = leftPerson.name.charAt(0).toUpperCase();
+    }
+
+    const leftName = document.createElement('div');
+    leftName.className = 'person-name';
+    leftName.textContent = leftPerson.name.split(' ')[0]; // Only first name
+    leftName.style.marginLeft = '-20px';
+
+    leftDiv.appendChild(leftCircle);
+    leftDiv.appendChild(leftName);
+    leftDiv.addEventListener('click', () => showPersonDetails(leftPerson));
+
+    // Draw right person
+    const rightDiv = document.createElement('div');
+    rightDiv.className = 'person';
+    rightDiv.style.left = rightPerson.x + 'px';
+    rightDiv.style.top = rightPerson.y + 'px';
+
+    const rightCircle = document.createElement('div');
+    rightCircle.className = 'person-circle';
+    if (rightPerson.photo) {
+        rightCircle.style.backgroundImage = `url(${rightPerson.photo})`;
+    } else {
+        rightCircle.textContent = rightPerson.name.charAt(0).toUpperCase();
+    }
+
+    const rightName = document.createElement('div');
+    rightName.className = 'person-name';
+    rightName.textContent = rightPerson.name.split(' ')[0]; // Only first name
+    rightName.style.marginLeft = '20px';
+
+    rightDiv.appendChild(rightCircle);
+    rightDiv.appendChild(rightName);
+    rightDiv.addEventListener('click', () => showPersonDetails(rightPerson));
+
+    // Append in correct order
+    if (marriedIn === leftPerson) {
+        canvas.appendChild(leftDiv);
+        canvas.appendChild(rightDiv);
+    } else {
+        canvas.appendChild(rightDiv);
+        canvas.appendChild(leftDiv);
+    }
+}
+
 
       function formatBirthday(birthday) {
     if (!birthday) return 'N/A';
