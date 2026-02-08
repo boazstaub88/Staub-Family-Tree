@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Tree</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        #tree-container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+            cursor: grab;
+            overflow: hidden;
+        }
+
+        #tree-container.grabbing {
+            cursor: grabbing;
+        }
+
+        #tree-canvas {
+            position: absolute;
+            transform-origin: 0 0;
+        }
+
+        .person {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+            z-index: 10;
+        }
+
+        .person:hover {
+            transform: scale(1.1);
+            z-index: 20;
+        }
+
+        .person-circle {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 4px solid white;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            background-size: cover;
+            background-position: center;
+            background-color: #9333ea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .person-name {
+            margin-top: 8px;
+            color: white;
+            font-weight: 600;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 100px;
+            font-size: 14px;
+            background: rgba(102, 126, 234, 0.8);
+            padding: 4px 10px;
+            border-radius: 12px;
+            white-space: nowrap;
+            position: relative;
+            z-index: 15;
+        }
+
+        #controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            background: white;
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+        }
+
+        #person-modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            z-index: 1000;
+            max-width: 400px;
+            width: 90%;
+        }
+
+        #modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 999;
+        }
+
+        .modal-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            background-size: cover;
+            background-position: center;
+            border: 4px solid #667eea;
+            background-color: #9333ea;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            color: white;
+        }
+
+        .modal-info {
+            margin: 10px 0;
+        }
+
+        .modal-info label {
+            font-weight: 600;
+            color: #667eea;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .modal-info p {
+            color: #333;
+        }
+
+        .close-btn {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: #999;
+        }
+
+        #zoom-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .zoom-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            padding: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <button id="reset-view-btn">Reset View</button>
+    </div>
+
+    <div id="zoom-controls">
+        <button class="zoom-btn" id="zoom-in">+</button>
+        <button class="zoom-btn" id="zoom-out">−</button>
+    </div>
+
+    <div id="tree-container">
+        <div id="tree-canvas"></div>
+    </div>
+
+    <div id="modal-overlay"></div>
+    <div id="person-modal">
+        <span class="close-btn" id="close-modal">&times;</span>
+        <div class="modal-photo" id="modal-photo"></div>
+        <div class="modal-info">
+            <label>Name:</label>
+            <p id="modal-name"></p>
+        </div>
+        <div class="modal-info">
+            <label>Email:</label>
+            <p id="modal-email"></p>
+        </div>
+        <div class="modal-info">
+            <label>Phone:</label>
+            <p id="modal-phone"></p>
+        </div>
+        <div class="modal-info">
+            <label>Birthday:</label>
+            <p id="modal-birthday"></p>
+        </div>
+        <div class="modal-info">
+            <label>Notes:</label>
+            <p id="modal-notes"></p>
+        </div>
+    </div>
+
+    <script src="family-data.js"></script>
+    <script>
+        // Tree rendering
+        const canvas = document.getElementById('tree-canvas');
+        const container = document.getElementById('tree-container');
+        
+        let scale = 1;
+        let translateX = 0;
+        let translateY = 0;
+        let isDragging = false;
+        let startX, startY;
+        let svgElement = null;
+
+        function drawTree() {
+            canvas.innerHTML = '';
+            svgElement = null;
+            
+            // Draw connections first
+            familyData.forEach(person => {
+                if (person.parents && person.parents.length > 0) {
+                    // Check if this person's parents are a couple
+                    const couple = couples.find(c => 
+                        (c.partner1 === person.parents[0] && c.partner2 === person.parents[1]) ||
+                        (c.partner1 === person.parents[1] && c.partner2 === person.parents[0])
+                    );
+                    
+                    if (couple) {
+                        // Draw line from couple midpoint to child
+                        const parent1 = familyData.find(p => p.id === couple.partner1);
+                        const parent2 = familyData.find(p => p.id === couple.partner2);
+                        if (parent1 && parent2) {
+                            drawConnectionFromCouple(parent1, parent2, person);
+                        }
+                    } else {
+                        // Draw individual parent lines
+                        person.parents.forEach(parentId => {
+                            const parent = familyData.find(p => p.id === parentId);
+                            if (parent) {
+                                drawConnection(parent, person);
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Draw people
+            familyData.forEach(person => {
+                drawPerson(person);
+            });
+        }
+
+        function drawConnectionFromCouple(parent1, parent2, child) {
+            if (!svgElement) {
+                svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svgElement.style.position = 'absolute';
+                svgElement.style.top = '0';
+                svgElement.style.left = '0';
+                svgElement.style.width = '3000px';
+                svgElement.style.height = '3000px';
+                svgElement.style.pointerEvents = 'none';
+                svgElement.style.overflow = 'visible';
+                svgElement.style.zIndex = '-1';
+                canvas.appendChild(svgElement);
+            }
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            
+            // Find midpoint between the two parents
+            const x1 = (parent1.x + parent2.x) / 2 + 40;
+            const y1 = Math.max(parent1.y, parent2.y) + 80;
+            
+            // End point: top center of child
+            const x2 = child.x + 40;
+            const y2 = child.y;
+            
+            // Create path: down from couple, across, then down to child
+            const midY = (y1 + y2) / 2;
+            const pathData = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
+            
+            path.setAttribute('d', pathData);
+            path.setAttribute('stroke', 'white');
+            path.setAttribute('stroke-width', '3');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('opacity', '0.7');
+            
+            svgElement.appendChild(path);
+        }
+
+        function drawConnection(parent, child) {
+            if (!svgElement) {
+                svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svgElement.style.position = 'absolute';
+                svgElement.style.top = '0';
+                svgElement.style.left = '0';
+                svgElement.style.width = '3000px';
+                svgElement.style.height = '3000px';
+                svgElement.style.pointerEvents = 'none';
+                svgElement.style.overflow = 'visible';
+                svgElement.style.zIndex = '-1';
+                canvas.appendChild(svgElement);
+            }
+            
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            
+            // Start point: bottom center of parent
+            const x1 = parent.x + 40;
+            const y1 = parent.y + 80;
+            
+            // End point: top center of child
+            const x2 = child.x + 40;
+            const y2 = child.y;
+            
+            // Create path: down from parent, across, then down to child
+            const midY = (y1 + y2) / 2;
+            const pathData = `M ${x1} ${y1} L ${x1} ${midY} L ${x2} ${midY} L ${x2} ${y2}`;
+            
+            path.setAttribute('d', pathData);
+            path.setAttribute('stroke', 'white');
+            path.setAttribute('stroke-width', '3');
+            path.setAttribute('fill', 'none');
+            path.setAttribute('opacity', '0.7');
+            
+            svgElement.appendChild(path);
+        }
+
+        function drawPerson(person) {
+            // Check if this person is part of a couple
+            const couple = couples.find(c => c.partner1 === person.id || c.partner2 === person.id);
+            
+            if (couple) {
+                const isPartner1 = couple.partner1 === person.id;
+                const partner = familyData.find(p => p.id === (isPartner1 ? couple.partner2 : couple.partner1));
+                
+                if (partner && isPartner1) {
+                    // Only draw once (when we're partner1)
+                    drawCouple(person, partner);
+                    return;
+                } else if (partner && !isPartner1) {
+                    // Skip, already drawn
+                    return;
+                }
+            }
+            
+            // Draw as individual
+            const personDiv = document.createElement('div');
+            personDiv.className = 'person';
+            personDiv.style.left = person.x + 'px';
+            personDiv.style.top = person.y + 'px';
+            
+            const circle = document.createElement('div');
+            circle.className = 'person-circle';
+            
+            if (person.photo) {
+                circle.style.backgroundImage = `url(${person.photo})`;
+            } else {
+                circle.textContent = person.name.charAt(0).toUpperCase();
+            }
+            
+            const name = document.createElement('div');
+            name.className = 'person-name';
+            name.textContent = person.name;
+            
+            personDiv.appendChild(circle);
+            personDiv.appendChild(name);
+            
+            personDiv.addEventListener('click', () => showPersonDetails(person));
+            
+            canvas.appendChild(personDiv);
+        }
+
+        function drawCouple(person1, person2) {
+            // Determine who was born into the family (has parents) and who married in (no parents)
+            let bornIntoFamily = person1;
+            let marriedIn = person2;
+            
+            // If person2 has parents and person1 doesn't, swap them
+            if ((!person1.parents || person1.parents.length === 0) && person2.parents && person2.parents.length > 0) {
+                bornIntoFamily = person2;
+                marriedIn = person1;
+            }
+            
+            // Draw the married-in spouse FIRST (so they appear underneath)
+            const spouseDiv = document.createElement('div');
+            spouseDiv.className = 'person';
+            spouseDiv.style.left = marriedIn.x + 'px';
+            spouseDiv.style.top = marriedIn.y + 'px';
+            
+            const spouseCircle = document.createElement('div');
+            spouseCircle.className = 'person-circle';
+            
+            if (marriedIn.photo) {
+                spouseCircle.style.backgroundImage = `url(${marriedIn.photo})`;
+            } else {
+                spouseCircle.textContent = marriedIn.name.charAt(0).toUpperCase();
+            }
+            
+            const spouseName = document.createElement('div');
+            spouseName.className = 'person-name';
+            spouseName.textContent = marriedIn.name;
+            
+            spouseDiv.appendChild(spouseCircle);
+            spouseDiv.appendChild(spouseName);
+            spouseDiv.addEventListener('click', () => showPersonDetails(marriedIn));
+            
+            // Draw the born-into-family person SECOND (so they appear on top)
+            const familyDiv = document.createElement('div');
+            familyDiv.className = 'person';
+            familyDiv.style.left = bornIntoFamily.x + 'px';
+            familyDiv.style.top = bornIntoFamily.y + 'px';
+            
+            const familyCircle = document.createElement('div');
+            familyCircle.className = 'person-circle';
+            
+            if (bornIntoFamily.photo) {
+                familyCircle.style.backgroundImage = `url(${bornIntoFamily.photo})`;
+            } else {
+                familyCircle.textContent = bornIntoFamily.name.charAt(0).toUpperCase();
+            }
+            
+            const familyName = document.createElement('div');
+            familyName.className = 'person-name';
+            familyName.textContent = bornIntoFamily.name;
+            
+            familyDiv.appendChild(familyCircle);
+            familyDiv.appendChild(familyName);
+            familyDiv.addEventListener('click', () => showPersonDetails(bornIntoFamily));
+            
+            // Append in order: spouse first (bottom), then family member (top)
+            canvas.appendChild(spouseDiv);
+            canvas.appendChild(familyDiv);
+        }
+
+        function showPersonDetails(person) {
+            document.getElementById('modal-photo').style.backgroundImage = 
+                person.photo ? `url(${person.photo})` : 'none';
+            document.getElementById('modal-photo').textContent = 
+                person.photo ? '' : person.name.charAt(0).toUpperCase();
+            document.getElementById('modal-name').textContent = person.name;
+            document.getElementById('modal-email').textContent = person.email || 'N/A';
+            document.getElementById('modal-phone').textContent = person.phone || 'N/A';
+            document.getElementById('modal-birthday').textContent = person.birthday || 'N/A';
+            document.getElementById('modal-notes').textContent = person.notes || 'N/A';
+            
+            document.getElementById('modal-overlay').style.display = 'block';
+            document.getElementById('person-modal').style.display = 'block';
+        }
+
+        function updateTransform() {
+            canvas.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
+        }
+
+        // Pan functionality
+        container.addEventListener('mousedown', (e) => {
+            if (e.target === container || e.target === canvas) {
+                isDragging = true;
+                startX = e.clientX - translateX;
+                startY = e.clientY - translateY;
+                container.classList.add('grabbing');
+            }
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (isDragging) {
+                translateX = e.clientX - startX;
+                translateY = e.clientY - startY;
+                updateTransform();
+            }
+        });
+
+        container.addEventListener('mouseup', () => {
+            isDragging = false;
+            container.classList.remove('grabbing');
+        });
+
+        container.addEventListener('mouseleave', () => {
+            isDragging = false;
+            container.classList.remove('grabbing');
+        });
+
+        // Zoom functionality
+        container.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? 0.9 : 1.1;
+            scale *= delta;
+            scale = Math.max(0.3, Math.min(3, scale));
+            updateTransform();
+        });
+
+        document.getElementById('zoom-in').addEventListener('click', () => {
+            scale *= 1.2;
+            scale = Math.min(3, scale);
+            updateTransform();
+        });
+
+        document.getElementById('zoom-out').addEventListener('click', () => {
+            scale *= 0.8;
+            scale = Math.max(0.3, scale);
+            updateTransform();
+        });
+
+        document.getElementById('reset-view-btn').addEventListener('click', () => {
+            scale = 1;
+            translateX = container.offsetWidth / 2 - 200;
+            translateY = 50;
+            updateTransform();
+        });
+
+        // Modal close
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('modal-overlay').style.display = 'none';
+            document.getElementById('person-modal').style.display = 'none';
+        });
+
+        document.getElementById('modal-overlay').addEventListener('click', () => {
+            document.getElementById('modal-overlay').style.display = 'none';
+            document.getElementById('person-modal').style.display = 'none';
+        });
+
+        // Initialize
+        translateX = container.offsetWidth / 2 - 200;
+        translateY = 50;
+        updateTransform();
+        drawTree();
+    </script>
+</body>
+</html>
