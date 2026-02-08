@@ -11,6 +11,16 @@
             box-sizing: border-box;
         }
 
+        .copyable {
+    cursor: pointer;
+    color: #667eea;
+    text-decoration: underline;
+    }
+
+    .copyable:hover {
+    opacity: 0.7;
+    }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -468,20 +478,62 @@
             }
         }
 
-        function showPersonDetails(person) {
-            document.getElementById('modal-photo').style.backgroundImage = 
-                person.photo ? `url(${person.photo})` : 'none';
-            document.getElementById('modal-photo').textContent = 
-                person.photo ? '' : person.name.charAt(0).toUpperCase();
-            document.getElementById('modal-name').textContent = person.name;
-            document.getElementById('modal-email').textContent = person.email || 'N/A';
-            document.getElementById('modal-phone').textContent = person.phone || 'N/A';
-            document.getElementById('modal-birthday').textContent = person.birthday || 'N/A';
-            document.getElementById('modal-notes').textContent = person.notes || 'N/A';
-            
-            document.getElementById('modal-overlay').style.display = 'block';
-            document.getElementById('person-modal').style.display = 'block';
-        }
+      function formatBirthday(birthday) {
+    if (!birthday) return 'N/A';
+
+    // Split manually so JS doesn't convert timezones
+    const [year, month, day] = birthday.split('-').map(Number);
+    const date = new Date(year, month - 1, day); // month is 0-indexed
+
+    // Format: Month Day, Year
+    const formatted = date.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric'
+    });
+
+    // Calculate age
+    const today = new Date();
+    let age = today.getFullYear() - date.getFullYear();
+    const m = today.getMonth() - date.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < date.getDate())) {
+        age--;
+    }
+
+    return `${formatted} (${age})`;
+}
+
+
+
+function showPersonDetails(person) {
+    document.getElementById('modal-photo').style.backgroundImage =
+        person.photo ? `url(${person.photo})` : 'none';
+    document.getElementById('modal-photo').textContent =
+        person.photo ? '' : person.name.charAt(0).toUpperCase();
+
+    document.getElementById('modal-name').textContent = person.name;
+
+    const emailEl = document.getElementById('modal-email');
+    const phoneEl = document.getElementById('modal-phone');
+
+    emailEl.textContent = person.email || 'N/A';
+    phoneEl.textContent = person.phone || 'N/A';
+
+    emailEl.classList.toggle('copyable', !!person.email);
+    phoneEl.classList.toggle('copyable', !!person.phone);
+
+    emailEl.onclick = () => copyToClipboard(person.email);
+    phoneEl.onclick = () => copyToClipboard(person.phone);
+
+    document.getElementById('modal-birthday').textContent =
+        formatBirthday(person.birthday);
+
+    document.getElementById('modal-notes').textContent = person.notes || 'N/A';
+
+    document.getElementById('modal-overlay').style.display = 'block';
+    document.getElementById('person-modal').style.display = 'block';
+}
+
 
         function updateTransform() {
             canvas.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
